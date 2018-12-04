@@ -3,7 +3,10 @@ module DE1_SoC (
 	output logic [9:0] LEDR,
 	input logic [3:0] KEY,
 	input logic [9:0] SW,
+	inout [35:0] GPIO_0,
 
+	inout PS2_CLK, PS2_DAT,
+	
 	input CLOCK_50,
 	output [7:0] VGA_R,
 	output [7:0] VGA_G,
@@ -52,6 +55,16 @@ module DE1_SoC (
 	pixel_counter #(H, W) pc (.clock(CLOCK_50), .reset(~VGA_VS), .x, .y);
 	
 //	SMPTE_Bars(.x, .y, .R, .G, .B);
+
+	logic enable, clr, middle;
+	logic [3:0] mouse_x, mouse_y;
+	
+	//mouse input
+	mouse_toplevel mouse(.clk(CLOCK_50), .start(~KEY[1]), .reset (~KEY[0]),
+								.PS2_CLK(PS2_CLK), .PS2_DAT(PS2_DAT), .GPIO_0(GPIO_0),
+								.enable(enable), .clr(clr), .middle(middle),
+								.x(mouse_x), .y(mouse_y));
+	
 endmodule
 
 
@@ -69,6 +82,8 @@ module DE1_SoC_testbench();
 	logic VGA_HS;
 	logic VGA_SYNC_N;
 	logic VGA_VS;
+	logic GPIO_0;
+	logic PS2_CLK, PS2_DAT;
 	
 	// Inputs 
 	logic [3:0] KEY;

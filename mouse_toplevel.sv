@@ -1,16 +1,15 @@
-module mouse_toplevel (CLOCK_50, KEY, PS2_CLK, PS2_DAT, GPIO_0, enable, clr, middle);
+module mouse_toplevel (clk, start, reset, PS2_CLK, PS2_DAT,
+								GPIO_0, enable, clr, middle, x, y);
 
-	input logic CLOCK_50;
+	input logic clk;
+	input logic reset, start;
 	output logic enable, clr, middle;
-	input logic [3:0] KEY;
 	inout  PS2_CLK;
 	inout  PS2_DAT;
 	inout [35:0] GPIO_0;
 		
-	wire [3:0] x, y;
+	output logic [3:0] x, y;
 	logic [3:0] prev_x, prev_y;
-	logic reset;
-	assign reset = ~KEY[1];
 //	SEG7_LUT d0 (.iDIG(x),.oSEG(HEX0));
 //	SEG7_LUT d1 (.iDIG(y),.oSEG(HEX1));
 			
@@ -20,9 +19,9 @@ module mouse_toplevel (CLOCK_50, KEY, PS2_CLK, PS2_DAT, GPIO_0, enable, clr, mid
 			.BIN(100),
 			.HYSTERESIS(30))
 	U1(
-			.start(~KEY[0]),  
+			.start(start),  
 			.reset(reset),  
-			.CLOCK_50(CLOCK_50),  
+			.CLOCK_50(clk),  
 			.PS2_CLK(PS2_CLK), 
 			.PS2_DAT(PS2_DAT), 
 			.button_left(enable),  
@@ -32,7 +31,7 @@ module mouse_toplevel (CLOCK_50, KEY, PS2_CLK, PS2_DAT, GPIO_0, enable, clr, mid
 			.bin_y(y)
 			);
 	
-	always_ff @(posedge CLOCK_50) begin
+	always_ff @(posedge clk) begin
 		if (reset) begin
 			prev_x <= 0;
 			prev_y <= 0;
