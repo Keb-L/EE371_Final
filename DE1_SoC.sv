@@ -18,13 +18,13 @@ module DE1_SoC (
 	output VGA_VS
 );
 	
-	assign HEX0 = '1;
-	assign HEX1 = '1;
-	assign HEX2 = '1;
-	assign HEX3 = '1;
-	assign HEX4 = '1;
-	assign HEX5 = '1;
-	assign LEDR = SW;
+//	assign HEX0 = '1;
+//	assign HEX1 = '1;
+//	assign HEX2 = '1;
+//	assign HEX3 = '1;
+//	assign HEX4 = '1;
+//	assign HEX5 = '1;
+//	assign LEDR = SW;
 	
 	logic [10:0] x, y;
 	logic [23:0] color;
@@ -47,24 +47,42 @@ module DE1_SoC (
 //		pixel_GS = color_acc / 3;
 	end
 	
-	VGA_framebuffer fb(.clk50(CLOCK_50), .reset(~KEY[0]), .x, .y,
-				.pixel_GS, .pixel_write(1'b1),
-				.VGA_R, .VGA_G, .VGA_B, .VGA_CLK, .VGA_HS, .VGA_VS,
-				.VGA_BLANK_n(VGA_BLANK_N), .VGA_SYNC_n(VGA_SYNC_N));
-				
-	pixel_counter #(H, W) pc (.clock(CLOCK_50), .reset(~VGA_VS), .x, .y);
+//	VGA_framebuffer fb(.clk50(CLOCK_50), .reset(~KEY[0]), .x, .y,
+//				.pixel_GS, .pixel_write(1'b1),
+//				.VGA_R, .VGA_G, .VGA_B, .VGA_CLK, .VGA_HS, .VGA_VS,
+//				.VGA_BLANK_n(VGA_BLANK_N), .VGA_SYNC_n(VGA_SYNC_N));
+//				
+//	pixel_counter #(H, W) pc (.clock(CLOCK_50), .reset(~VGA_VS), .x, .y);
 	
 //	SMPTE_Bars(.x, .y, .R, .G, .B);
 
 	logic enable, clr, middle;
-	logic [3:0] mouse_x, mouse_y;
+	logic [10:0] mouse_x, mouse_y;
 	
 	//mouse input
 	mouse_toplevel mouse(.clk(CLOCK_50), .start(~KEY[1]), .reset (~KEY[0]),
 								.PS2_CLK(PS2_CLK), .PS2_DAT(PS2_DAT), .GPIO_0(GPIO_0),
 								.enable(enable), .clr(clr), .middle(middle),
 								.x(mouse_x), .y(mouse_y));
+	assign LEDR = { 
+						GPIO_0[0], 	// 9
+						GPIO_0[1], 	// 8
+						1'b0,			// 7
+						clr,			// 6
+						middle,		// 5
+						enable,		// 4
+						2'b00,		// 3-2
+						~KEY[1],		// 1
+						~KEY[0]		// 0
+						};
 	
+	SEG7_LUT h5 (.iDIG( {1'b0, mouse_x[10:8]}), .oSEG(HEX5) );
+	SEG7_LUT h4 (.iDIG( 			mouse_x[7:4]  ), .oSEG(HEX4) );
+	SEG7_LUT h3 (.iDIG( 			mouse_x[3:0]  ), .oSEG(HEX3) );
+	
+	SEG7_LUT h2 (.iDIG( {1'b0, mouse_y[10:8]}), .oSEG(HEX2) );
+	SEG7_LUT h1 (.iDIG( 			mouse_y[7:4]  ), .oSEG(HEX1) );
+	SEG7_LUT h0 (.iDIG( 			mouse_y[3:0]  ), .oSEG(HEX0) );
 endmodule
 
 

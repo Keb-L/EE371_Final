@@ -8,14 +8,14 @@ module mouse_toplevel (clk, start, reset, PS2_CLK, PS2_DAT,
 	inout  PS2_DAT;
 	inout [35:0] GPIO_0;
 		
-	output logic [3:0] x, y;
-	logic [3:0] prev_x, prev_y;
+	output logic [10:0] x, y;
+	logic [10:0] prev_x, prev_y;
 //	SEG7_LUT d0 (.iDIG(x),.oSEG(HEX0));
 //	SEG7_LUT d1 (.iDIG(y),.oSEG(HEX1));
 			
 	ps2 #(
-			.WIDTH(10),//640
-			.HEIGHT(10),//480
+			.WIDTH(640),//640
+			.HEIGHT(480),//480
 			.BIN(100),
 			.HYSTERESIS(30))
 	U1(
@@ -43,7 +43,7 @@ module mouse_toplevel (clk, start, reset, PS2_CLK, PS2_DAT,
 	end
 	
 	always_comb begin
-	if ((prev_x == x) && (prev_y == y)) begin	//no motion detected
+	if ((prev_x == x) && (prev_y == bin_y)) begin	//no motion detected
 			GPIO_0[1] = 1;
 			GPIO_0[0] = 0;
 		end
