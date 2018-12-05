@@ -7,6 +7,16 @@ module DE1_SoC (
 
 	inout PS2_CLK, PS2_DAT,
 	
+	//I2C Audio/Video config interface
+	output FPGA_I2C_SCLK,
+	inout FPGA_I2C_SDAT,
+	
+	//CODEC
+	output AUD_XCK,
+	input AUD_ADCDAT,
+	input AUD_DACLRCK, AUD_ADCLRCK, AUD_BCLK,
+	output AUD_DACDAT,
+	
 	input CLOCK_50,
 	output [7:0] VGA_R,
 	output [7:0] VGA_G,
@@ -18,13 +28,15 @@ module DE1_SoC (
 	output VGA_VS
 );
 	
-//	assign HEX0 = '1;
 //	assign HEX1 = '1;
 //	assign HEX2 = '1;
 //	assign HEX3 = '1;
 //	assign HEX4 = '1;
 //	assign HEX5 = '1;
 //	assign LEDR = SW;
+	
+	logic reset;
+	assign reset = ~KEY[0];
 	
 	logic [10:0] x, y;
 	logic [23:0] color;
@@ -57,32 +69,54 @@ module DE1_SoC (
 //	SMPTE_Bars(.x, .y, .R, .G, .B);
 
 	logic enable, clr, middle;
-	logic [10:0] mouse_x, mouse_y;
 	
 	//mouse input
-	mouse_toplevel mouse(.clk(CLOCK_50), .start(~KEY[1]), .reset (~KEY[0]),
+	mouse_toplevel mouse(.clk(CLOCK_50), .start(~KEY[1]), .reset,
 								.PS2_CLK(PS2_CLK), .PS2_DAT(PS2_DAT), .GPIO_0(GPIO_0),
 								.enable(enable), .clr(clr), .middle(middle),
 								.x(mouse_x), .y(mouse_y));
-	assign LEDR = { 
-						GPIO_0[0], 	// 9
-						GPIO_0[1], 	// 8
-						1'b0,			// 7
-						clr,			// 6
-						middle,		// 5
-						enable,		// 4
-						2'b00,		// 3-2
-						~KEY[1],		// 1
-						~KEY[0]		// 0
-						};
+
+
+
+
+
+								
+	logic read, write;
+	logic[23:0] writedata_left, writedata_right;
+	logic read_ready, write_ready;
+	logic[23:0] readdata_left, readdata_right;
 	
-	SEG7_LUT h5 (.iDIG( {1'b0, mouse_x[10:8]}), .oSEG(HEX5) );
-	SEG7_LUT h4 (.iDIG( 			mouse_x[7:4]  ), .oSEG(HEX4) );
-	SEG7_LUT h3 (.iDIG( 			mouse_x[3:0]  ), .oSEG(HEX3) );
+	audio_and_video_config cfg(
+		// Inputs
+		CLOCK_50,
+		reset,
+
+		// Bidirectionals
+		FPGA_I2C_SDAT,
+		FPGA_I2C_SCLK
+	);
 	
-	SEG7_LUT h2 (.iDIG( {1'b0, mouse_y[10:8]}), .oSEG(HEX2) );
-	SEG7_LUT h1 (.iDIG( 			mouse_y[7:4]  ), .oSEG(HEX1) );
-	SEG7_LUT h0 (.iDIG( 			mouse_y[3:0]  ), .oSEG(HEX0) );
+	audio_codec codec (
+		CLOCK_50,
+		reset,
+
+		read,	write,
+		writedata_left, writedata_right,
+
+		AUD_ADCDAT,
+
+		// Bidirectionals
+		AUD_BCLK,
+		AUD_ADCLRCK,
+		AUD_DACLRCK,
+
+		// Outputs
+		read_ready, write_ready,
+		readdata_left, readdata_right,
+		AUD_DACDAT
+							);
+								
+	
 endmodule
 
 
@@ -91,6 +125,8 @@ module DE1_SoC_testbench();
 	// Outputs
 	logic [6:0] HEX0, HEX1, HEX2, HEX3, HEX4, HEX5;
 	logic [9:0] LEDR;
+	
+	
 	
 	logic [7:0] VGA_R;
 	logic [7:0] VGA_G;
@@ -102,6 +138,14 @@ module DE1_SoC_testbench();
 	logic VGA_VS;
 	logic GPIO_0;
 	logic PS2_CLK, PS2_DAT;
+	
+	logic  FPGA_I2C_SCLK;
+	logic FPGA_I2C_SDAT;
+	logic AUD_XCK;
+	
+	logic  AUD_DACLRCK, AUD_ADCLRCK, AUD_BCLK;
+	logic AUD_ADCDAT;
+	logic AUD_DACDAT;
 	
 	// Inputs 
 	logic [3:0] KEY;
