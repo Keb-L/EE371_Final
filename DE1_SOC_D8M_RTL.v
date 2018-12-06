@@ -132,7 +132,7 @@ module DE1_SOC_D8M_RTL(
 	
 	Filter #(.WIDTH(640), .HEIGHT(480))
 		filter (.VGA_CLK(VGA_CLK),
-					.iVGA_B(pre_VGA_B), .iVGA_G(pre_VGA_G), .iVGA_R(pre_VGA_R),
+					.iVGA_B(pre_VGA_B), .iVGA_G(pre_VGA_G), .iVGA_R(pre_VGA_R), .iVGA_Gr( FRM_AVG ),
 					.iVGA_HS(pre_VGA_HS), .iVGA_VS(pre_VGA_VS),
 					.iVGA_SYNC_N(pre_VGA_SYNC_N), .iVGA_BLANK_N(pre_VGA_BLANK_N),
 					.oVGA_B(post_VGA_B), .oVGA_G(post_VGA_G), .oVGA_R(post_VGA_R),
@@ -397,5 +397,16 @@ CLOCKMEM  ck3 ( .CLK(MIPI_PIXEL_CLK_)   ,.CLK_FREQ  (25000000  ) , . CK_1HZ (D8M
 
 
 //assign LEDR = { D8M_CK_HZ ,D8M_CK_HZ2,D8M_CK_HZ3 ,5'h0,CAMERA_MIPI_RELAESE ,MIPI_BRIDGE_RELEASE  } ; 
+
+// =====================================================
+//							END OF CAMERA CODE
+// =====================================================
+wire [7:0] FRM_AVG;
+CAM_AVG pavg (
+	.VGA_CLK(VGA_CLK),
+	.RST(pre_VGA_VS), 
+	.pixel(GRAY),
+	.color(FRM_AVG)
+);
 
 endmodule

@@ -1,12 +1,11 @@
-module mouse_controller (clk, start, reset, PS2_CLK, PS2_DAT,
-								GPIO_0, enable, clr, middle, x, y);
-
+module mouse_controller (clk, start, reset, PS2_CLK, PS2_DAT, MS_DIR,
+									enable, clr, middle, x, y);
 	input logic clk;
 	input logic reset, start;
 	output logic enable, clr, middle;
 	inout  PS2_CLK;
 	inout  PS2_DAT;
-	inout [35:0] GPIO_0;
+	output [8:0] MS_DIR;
 		
 	output logic [10:0] x, y;
 	logic [10:0] prev_x, prev_y;
@@ -43,14 +42,12 @@ module mouse_controller (clk, start, reset, PS2_CLK, PS2_DAT,
 	end
 	
 	always_comb begin
+	MS_DIR = '0;
 	if ((prev_x == x) && (prev_y == y)) begin	//no motion detected
-			GPIO_0[1] = 1;
-			GPIO_0[0] = 0;
+			MS_DIR[4] = 1'b1;
 		end
 		else begin											//motion
-			GPIO_0[0] = 1;
-			GPIO_0[1] = 0;
+			MS_DIR[1] = 1'b1;
 		end
 	end
-	
 endmodule

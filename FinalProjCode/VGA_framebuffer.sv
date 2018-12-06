@@ -5,14 +5,15 @@
  */
 
 module VGA_framebuffer(
- input logic 	    clk50, reset,
+ input logic 	    CLOCK_50, reset,
  input logic [10:0] x, y, // Pixel coordinates
  input logic [7:0] pixel_GS,
  input logic pixel_write,
 		       
  output logic [7:0] VGA_R, VGA_G, VGA_B,
- output logic 	    VGA_CLK, VGA_HS, VGA_VS, VGA_BLANK_n, VGA_SYNC_n);
-
+ output logic 	     VGA_HS, VGA_VS, VGA_BLANK_N, VGA_SYNC_N,
+ output logic [9:0] VGA_X, VGA_Y
+ );
 /*
  * 640 X 480 VGA timing for a 50 MHz clock: one pixel every other cycle
  * 
@@ -38,10 +39,12 @@ module VGA_framebuffer(
              VBACK_PORCH  = 10'd 33,
              VTOTAL       = VACTIVE + VFRONT_PORCH + VSYNC + VBACK_PORCH; //525
 
+//	parameter CLEAR = 8'h00;
+	
    logic [10:0]			     hcount; // Horizontal counter
    logic 			     endOfLine;
    
-   always_ff @(posedge clk50 or posedge reset)
+   always_ff @(posedge CLOCK_50 or posedge reset)
      if (reset)          hcount <= 0;
      else
 	  if (endOfLine) hcount <= 0;
@@ -53,7 +56,7 @@ module VGA_framebuffer(
    logic [9:0] 			     vcount;
    logic 			     endOfField;
    
-   always_ff @(posedge clk50 or posedge reset)
+   always_ff @(posedge CLOCK_50 or posedge reset)
      if (reset)          vcount <= 0;
      else if (endOfLine)
        if (endOfField)   vcount <= 0;
@@ -66,7 +69,7 @@ module VGA_framebuffer(
    assign VGA_HS = !( (hcount[10:7] == 4'b1010) & (hcount[6] | hcount[5]));
    assign VGA_VS = !( vcount[9:1] == (VACTIVE + VFRONT_PORCH) / 2);
 
-   assign VGA_SYNC_n = 1; // For adding sync to video signals; not used for VGA
+   assign VGA_SYNC_N = 1; // For adding sync to video signals; not used for VGA
    
    // Horizontal active: 0 to 1279     Vertical active: 0 to 479
    // 101 0000 0000  1280	       01 1110 0000  480	       
@@ -83,52 +86,48 @@ module VGA_framebuffer(
    assign write_address = x + (y << 9) + (y << 7) ; // x + y * 640
    assign read_address = (hcount >> 1) + (vcount << 9) + (vcount << 7);
 
-	logic 		 activebuffer;
    logic [7:0] pixel_read;
    
-   always_ff @(posedge clk50) begin
+   always_ff @(posedge CLOCK_50) begin
 		if (pixel_write) framebuffer[write_address] <= pixel_GS;
       if (hcount[0]) begin
-        pixel_read <= framebuffer[read_address];
-        VGA_BLANK_n <= ~blank; // Keep blank in sync with pixel data
+			pixel_read <= framebuffer[read_address];
+			VGA_BLANK_N <= ~blank; // Keep blank in sync with pixel data
       end
    end
-	
-	always_ff @(posedge clk50)
-		if(reset)
-			activebuffer <= 0;
-		else if (VGA_VS) // On vertical sync, switch buffers
-			activebuffer <= ~activebuffer;
-   
-   assign VGA_CLK = hcount[0]; // 25 MHz clock: pixel latched on rising edge
 
-   assign VGA_R = pixel_read;
-	assign VGA_G = pixel_read;
-	assign VGA_B = pixel_read;
+//   assign VGA_CLK = hcount[0]; // 25 MHz clock: pixel latched on rising edge
+
+   assign VGA_R = VGA_BLANK_N ? pixel_read : '0;
+	assign VGA_G = VGA_BLANK_N ? pixel_read : '0;
+	assign VGA_B = VGA_BLANK_N ? pixel_read : '0;
    
+	assign VGA_X = hcount >> 1;
+	assign VGA_Y = vcount;
 endmodule
 
 module VGA_framebuffer_testbench();
-logic 	    clk50, reset;
+logic 	    CLOCK_50, reset;
 logic [10:0] x, y; // Pixel coordinates
 logic [7:0]  pixel_GS;
 logic			 pixel_write;
+logic [18:0] VGA_X, VGA_Y;
 		       
 logic [7:0]  VGA_R, VGA_G, VGA_B;
-logic 	    VGA_CLK, VGA_HS, VGA_VS, VGA_BLANK_n, VGA_SYNC_n;
+logic 	    VGA_CLK, VGA_HS, VGA_VS, VGA_BLANK_N, VGA_SYNC_N;
 
 VGA_framebuffer dut (.*);
 
 parameter CLOCK_PERIOD = 20000;
 initial begin
-	clk50 <= 0;
-	forever #(CLOCK_PERIOD/2) clk50 <= ~clk50;
+	CLOCK_50 <= 0;
+	forever #(CLOCK_PERIOD/2) CLOCK_50 <= ~CLOCK_50;
 end
 
 initial begin
 pixel_write = 0; x = 4; y = 0; reset = 1;
-pixel_GS = 8'd127; @(posedge clk50);
-pixel_write = 1; reset = 0; @(posedge clk50);
+pixel_GS = 8'd127; @(posedge CLOCK_50);
+pixel_write = 1; reset = 0; @(posedge CLOCK_50);
 #1000000;
 $stop;
 end

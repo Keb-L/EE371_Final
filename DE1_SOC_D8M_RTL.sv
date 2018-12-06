@@ -148,7 +148,6 @@ module DE1_SOC_D8M_RTL(
 	assign VGA_R = post_VGA_R;
 	assign VGA_SYNC_N = post_VGA_SYNC_N;
 	assign VGA_VS = post_VGA_VS;
-	
 
 //=============================================================================
 // REG/WIRE declarations
@@ -191,8 +190,6 @@ wire [9:0]  LUT_MIPI_PIXEL_D  ;
 wire        MIPI_PIXEL_CLK_; 
 wire [9:0]  PCK;
 
-wire			reset;
-assign reset = ~KEY[2];
 //=======================================================
 // Structural coding
 //=======================================================
@@ -406,10 +403,6 @@ CLOCKMEM  ck3 ( .CLK(MIPI_PIXEL_CLK_)   ,.CLK_FREQ  (25000000  ) , . CK_1HZ (D8M
 //							END OF CAMERA CODE
 // =====================================================
 
-// =====================================================
-//							START OF AUDIO CODE
-// =====================================================
-
 	wire [23:0] readdata_left, readdata_right;
 	wire [23:0] writedata_left, writedata_right;
 	wire read, write, read_ready, write_ready;
@@ -448,28 +441,14 @@ CLOCKMEM  ck3 ( .CLK(MIPI_PIXEL_CLK_)   ,.CLK_FREQ  (25000000  ) , . CK_1HZ (D8M
 //							END OF AUDIO CODE
 // =====================================================
 					
-// =====================================================
-//							START OF MOUSE CODE
-// =====================================================
-
-	mouse_controller mouse (
-									.clk(CLOCK_50),
-									.start(~KEY[1]),
-									.reset(~KEY[2]),
-									.PS2_CLK(PS2_CLK),
-									.PS2_DAT(PS2_DAT),
-									.GPIO_0(GPIO_0),
-									.enable(enable),
-									.clr(clr),
-									.middle(middle),
-									.x(mouse_x),
-									.y(mouse_y)
-	);
-
 parameter H = 640, W = 480;
 wire [7:0] FRM_AVG;
 wire [10:0] x, y;
+wire [9:0] VGA_X, VGA_Y; // VGA pointer
+wire [8:0] MS_DIR; // Direction of the mouse 3x3
 
+// Determines the average color in a camera frame
+// Updates every half second
 CAM_AVG pavg (
 	.VGA_CLK(VGA_CLK),
 	.RST(pre_VGA_VS), 
@@ -477,24 +456,50 @@ CAM_AVG pavg (
 	.color(FRM_AVG)
 );
 
-//VGA_framebuffer fb(
-//		// Inputs
-//			.CLOCK2_50, 
-//			.reset(DLY_RST_2), 
-//			.x, 
-//			.y,
-//			.pixel_GS(FRM_AVG), 
-//			.pixel_write(1'b1),
-//		// Outputs
-//			.VGA_R(R_AUTO[7:0]), 
-//			.VGA_G(G_AUTO[7:0]), 
-//			.VGA_B(B_AUTO[7:0]),  
-//			.VGA_HS(pre_VGA_HS), 
-//			.VGA_VS(pre_VGA_VS),
-//			.VGA_BLANK_N(pre_VGA_BLANK_N), 
-//			.VGA_SYNC_N(pre_VGA_SYNC_N)
-//);
-//
+
+// VGA frame buffer controller
+VGA_framebuffer fb(
+	// Inputs
+		.CLOCK_50(CLOCK2_50), 
+		.reset(~KEY[2]), 
+		.x, 
+		.y,
+		.pixel_GS(FRM_AVG), 
+		.pixel_write(1'b1),
+	// Outputs
+		.VGA_R(R_AUTO[7:0]), 
+		.VGA_G(G_AUTO[7:0]), 
+		.VGA_B(B_AUTO[7:0]),  
+		.VGA_HS(pre_VGA_HS), 
+		.VGA_VS(pre_VGA_VS),
+		.VGA_BLANK_N(pre_VGA_BLANK_N), 
+		.VGA_SYNC_N(pre_VGA_SYNC_N),
+	// VGA pointer
+		.VGA_X, 
+		.VGA_Y
+);
+
+// Mouse Controller, interfaces with PS2
+mouse_controller mouse(.clk(CLOCK_50), 
+		.start(~KEY[1]), 
+		.reset(~KEY[2]),
+		
+		// PS2
+		.PS2_CLK(PS2_CLK), 
+		.PS2_DAT(PS2_DAT), 
+		
+		// Output
+		.MS_DIR(MS_DIR),
+		.enable(enable), 
+		.clr(clr), 
+		.middle(middle),
+		.x(x), 
+		.y(y)
+);
+
+assign GPIO[8:0] = MS_DIR;
+assign GPIO[35:9] = '0;
+
 //pixel_counter #(H, W) pc (.clock(VGA_CLK), .reset(~VGA_VS), .x, .y);
 
 endmodule

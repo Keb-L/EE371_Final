@@ -10,6 +10,7 @@ module Filter #(parameter WIDTH = 640, parameter HEIGHT = 480)
 	input logic		     [7:0]		iVGA_B, // Blue
 	input logic		     [7:0]		iVGA_G, // Green
 	input logic		     [7:0]		iVGA_R, // Red
+	input logic 		  [7:0]		iVGA_Gr, // Gray
 	// Horizontal sync.  Low between horizontal lines.
 	input logic		          		iVGA_HS,
 	// Vertical sync.  Low between video frames.
@@ -104,8 +105,10 @@ module Filter #(parameter WIDTH = 640, parameter HEIGHT = 480)
 	assign oVGA_BLANK_N = iVGA_BLANK_N;
 	*/
 	
-	assign HEX0 = '1;
-	assign HEX1 = '1;
+//	assign HEX0 = '1;
+//	assign HEX1 = '1;
+	SEG7_LUT h0 (.iDIG(iVGA_Gr[3:0]), .oSEG(HEX0));
+	SEG7_LUT h1 (.iDIG(iVGA_Gr[7:4]), .oSEG(HEX1));
 	assign HEX2 = '1;
 	assign HEX3 = '1;
 	assign HEX4 = '1;
@@ -137,6 +140,7 @@ module Filter_testbench ();
 	logic		     [7:0]		iVGA_B; // Blue
 	logic		     [7:0]		iVGA_G; // Green
 	logic		     [7:0]		iVGA_R; // Red
+	logic		     [7:0]		iVGA_Gr; // Red
 	// Horizontal sync.  Low between horizontal lines.
 	logic		          		iVGA_HS;
 	// Vertical sync.  Low between video frames.
