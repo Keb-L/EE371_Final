@@ -7,12 +7,12 @@
 module VGA_framebuffer(
  input logic 	    CLOCK_50, reset,
  input logic [10:0] x, y, // Pixel coordinates
- input logic [7:0] pixel_GS,
+ input logic [7:0] VGA_Cin,
  input logic pixel_write,
 		       
  output logic [7:0] VGA_R, VGA_G, VGA_B,
- output logic 	     VGA_HS, VGA_VS, VGA_BLANK_N, VGA_SYNC_N,
- output logic [9:0] VGA_X, VGA_Y
+ output logic [9:0] VGA_X, VGA_Y,
+ output logic 	     VGA_CLK, VGA_HS, VGA_VS, VGA_BLANK_N, VGA_SYNC_N
  );
 /*
  * 640 X 480 VGA timing for a 50 MHz clock: one pixel every other cycle
@@ -89,14 +89,14 @@ module VGA_framebuffer(
    logic [7:0] pixel_read;
    
    always_ff @(posedge CLOCK_50) begin
-		if (pixel_write) framebuffer[write_address] <= pixel_GS;
+		if (pixel_write) framebuffer[write_address] <= VGA_Cin;
       if (hcount[0]) begin
 			pixel_read <= framebuffer[read_address];
 			VGA_BLANK_N <= ~blank; // Keep blank in sync with pixel data
       end
    end
 
-//   assign VGA_CLK = hcount[0]; // 25 MHz clock: pixel latched on rising edge
+   assign VGA_CLK = hcount[0]; // 25 MHz clock: pixel latched on rising edge
 
    assign VGA_R = VGA_BLANK_N ? pixel_read : '0;
 	assign VGA_G = VGA_BLANK_N ? pixel_read : '0;
@@ -109,7 +109,7 @@ endmodule
 module VGA_framebuffer_testbench();
 logic 	    CLOCK_50, reset;
 logic [10:0] x, y; // Pixel coordinates
-logic [7:0]  pixel_GS;
+logic [7:0]  VGA_Cin;
 logic			 pixel_write;
 logic [18:0] VGA_X, VGA_Y;
 		       
@@ -126,7 +126,7 @@ end
 
 initial begin
 pixel_write = 0; x = 4; y = 0; reset = 1;
-pixel_GS = 8'd127; @(posedge CLOCK_50);
+VGA_Cin = 8'd127; @(posedge CLOCK_50);
 pixel_write = 1; reset = 0; @(posedge CLOCK_50);
 #1000000;
 $stop;

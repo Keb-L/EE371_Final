@@ -452,7 +452,8 @@ wire [7:0] R_AUTO_C, B_AUTO_C, G_AUTO_C;
 // Updates every half second
 CAM_AVG pavg (
 	.VGA_CLK(VGA_CLK),
-	.RST(pre_VGA_VS), 
+	.V_SYNC(pre_VGA_VS),
+	.RST_N(KEY[2]), 
 	.pixel(GRAY),
 	.color(FRM_AVG)
 );
@@ -465,12 +466,12 @@ VGA_framebuffer fb(
 		.reset(~KEY[2]), 
 		.x, 
 		.y,
-		.pixel_GS(FRM_AVG), 
-		.pixel_write(1'b1),
+		.VGA_Cin(FRM_AVG), 
+		.pixel_write(enable),
 	// Outputs
-		.VGA_R(R_AUTO[7:0]), 
-		.VGA_G(G_AUTO[7:0]), 
-		.VGA_B(B_AUTO[7:0]),  
+		.VGA_R( R_AUTO ), 
+		.VGA_G( G_AUTO ), 
+		.VGA_B( B_AUTO ),  
 		.VGA_HS(pre_VGA_HS), 
 		.VGA_VS(pre_VGA_VS),
 		.VGA_BLANK_N(pre_VGA_BLANK_N), 
