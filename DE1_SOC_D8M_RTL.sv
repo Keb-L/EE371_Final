@@ -340,9 +340,9 @@ FOCUS_ADJ adl(
                       .VIDEO_VS      ( pre_VGA_VS ),
                       .VIDEO_CLK     ( VGA_CLK ),
 		                .VIDEO_DE      (READ_Request) ,
-                      .iR            ( R_AUTO ), 
-                      .iG            ( G_AUTO ), 
-                      .iB            ( B_AUTO ), 
+                      .iR            ( R_AUTO_c ), 
+                      .iG            ( G_AUTO_C ), 
+                      .iB            ( B_AUTO_C ), 
                       .oR            ( pre_VGA_R ) , 
                       .oG            ( pre_VGA_G ) , 
                       .oB            ( pre_VGA_B ) , 
@@ -446,6 +446,7 @@ wire [7:0] FRM_AVG;
 wire [10:0] x, y;
 wire [9:0] VGA_X, VGA_Y; // VGA pointer
 wire [8:0] MS_DIR; // Direction of the mouse 3x3
+wire [7:0] R_AUTO_C, B_AUTO_C, G_AUTO_C;
 
 // Determines the average color in a camera frame
 // Updates every half second
@@ -495,6 +496,13 @@ mouse_controller mouse(.clk(CLOCK_50),
 		.middle(middle),
 		.x(x), 
 		.y(y)
+);
+
+showCursor sc (
+	.VGA_Cin_R(R_AUTO), .VGA_Cin_G(G_AUTO), .VGA_Cin_B(B_AUTO),
+	.cursorX(x), .cursorY(y),
+	.VGA_X(VGA_X), .VGA_Y(VGA_Y),
+	.VGA_Cout_R(R_AUTO_C), .VGA_Cout_G(G_AUTO_C), .VGA_Cout_B(B_AUTO_C)
 );
 
 assign GPIO[8:0] = MS_DIR;
