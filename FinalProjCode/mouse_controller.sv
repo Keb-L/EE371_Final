@@ -47,7 +47,8 @@ module mouse_controller #(parameter H = 480, W = 640)
 	if ((prev_x == x) && (prev_y == y)) begin	//no motion detected
 			MS_DIR[4] = 1'b1;
 		end
-		else begin											//motion
+		else begin										//motion
+			MS_DIR[4] = 1'b0;
 			if (prev_x > x) begin
 				MS_DIR[3] = 1'b1;
 				MS_DIR[5] = 1'b0;
