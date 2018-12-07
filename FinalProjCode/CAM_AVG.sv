@@ -3,42 +3,67 @@ module CAM_AVG (
 	input V_SYNC, 
 	input RST_N,
 	input [7:0] pixel,
-	output [7:0] color
+	output [7:0] color,
+	output upd
 );
 
-logic [31:0] acc, counter;
-logic [7:0] color_max;
-logic [7:0] color_reg;
+reg [31:0] r_acc, r_counter;
+reg [7:0] r_color;
+reg [7:0] r_frame; 
+reg [31:0] r_time;
+reg r_upd;
 
-logic [7:0] frame_counter;
+assign upd = r_upd;
+assign color = r_color;
 
-assign color = color_reg;
-
-always_ff @(posedge VGA_CLK or negedge RST_N or negedge V_SYNC) begin
-	if(~RST_N) begin
-		acc <= 0;
-		counter <= 0;
-		color_max <= 0;
-		frame_counter <= 0;
-	end
-	else if(~V_SYNC) begin
-		acc <= 0;
-		counter <= 0;
-		color_max <= 0;	
-		
-		// once every 30 frames
-		if (frame_counter >= 8'd30) begin
-			color_reg <= acc / counter;
-			frame_counter <= 0;
-		end
-		else
-			frame_counter <= frame_counter + 1;
+always_ff @(negedge V_SYNC) begin
+	if(r_frame + 1  == 8'd1) begin
+		r_frame <= 0;
+		r_color <= r_acc / (r_counter - 1);  
 	end
 	else begin
-		if (pixel > color_max)
-			color_max <= pixel;
-		acc <= acc + pixel;
-		counter <= counter + 1;
+		r_frame <= r_frame + 1;
+	end
+	r_upd <= ~r_upd;
+end
+
+always_ff @(posedge VGA_CLK) begin
+	if(~RST_N) begin
+		r_acc <= 0;
+		r_counter <= 1;
+//		r_frame <= 0;
+//		r_color <= 0;
+//		r_upd <= 0;
+		r_time <= 0;
+	end
+	else if(~V_SYNC) begin
+		r_acc <= 0;
+		r_counter <= 1;	
+		
+//		if(r_time > (32'h017D_7840 >> 2) ) begin
+//			r_time <= 0;
+//			r_color <= r_acc / (r_counter - 1);
+//			r_upd <= ~r_upd;
+//		end
+//		else begin
+//			r_time <= r_time + 1;
+//		end
+//		// once every 30 frames
+//		if (r_frame + 1 == 8'd60) begin
+//			r_color <= r_acc / (r_counter - 1);
+//			r_frame <= 0;
+//			r_upd <= ~r_upd;
+//		end
+//		else begin
+//			r_frame <= r_frame + 1;
+//		end
+	end
+	else begin
+		r_acc <= r_acc + pixel;
+		r_counter <= r_counter + 1;
+//		r_color <= r_color;
+//		r_frame <= r_frame;
+		r_time <= r_time + 1;
 	end
 end
 endmodule
@@ -48,6 +73,7 @@ logic VGA_CLK;
 logic RST_N, V_SYNC;
 logic [7:0] pixel;
 logic [7:0] color;
+logic upd;
 
 CAM_AVG dut (.*);
 
