@@ -449,6 +449,7 @@ wire [8:0] MS_DIR; // Direction of the mouse 3x3
 wire [7:0] R_AUTO_C, B_AUTO_C, G_AUTO_C;
 wire [7:0] VGA_Cin;
 wire enable;
+wire cam_upd;
 
 //pixel_counter #(H, W) pc (.clock(VGA_CLK), .reset(~pre_VGA_VS), .x(xC), .y(yC));
 clearScreen (.clk(CLOCK2_50), .reset(~KEY[2]), .en(clr),
@@ -474,7 +475,8 @@ CAM_AVG pavg (
 	.V_SYNC(pre_VGA_VS),
 	.RST_N(KEY[2]), 
 	.pixel(GRAY),
-	.color(FRM_AVG)
+	.color(FRM_AVG),
+	.upd(cam_upd)
 );
 
 
@@ -562,6 +564,7 @@ assign HEX5 = '1;
 always_comb begin
 	LEDR = '0;
 	LEDR[3:0] = ~KEY;
+	LEDR[5] = cam_upd;
 //	LEDR[3] = clr;
 //	LEDR[4] = middle;
 //	LEDR[5] = enable;
