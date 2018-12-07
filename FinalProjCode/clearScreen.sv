@@ -10,7 +10,7 @@ output logic [WIDTH-1:0] x, y
 logic [WIDTH-1:0] x_reg, y_reg;
 
 always_comb begin
-	x = x_reg; y = y_reg;
+	x = x_reg + 1; y = y_reg;
 
 	// horizontal first
 	if ( x + 1 > HACTIVE ) begin
@@ -29,7 +29,7 @@ always_ff @(posedge clk) begin
 		y_reg <= 0;
 	end 
 	else begin
-		x_reg <= x + 1;
+		x_reg <= x;
 		y_reg <= y;
 	end
 end

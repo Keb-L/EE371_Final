@@ -1,4 +1,5 @@
-module mouse_controller (clk, start, reset, PS2_CLK, PS2_DAT, MS_DIR,
+module mouse_controller #(parameter H = 480, W = 640)
+(clk, start, reset, PS2_CLK, PS2_DAT, MS_DIR,
 									enable, clr, middle, x, y);
 	input logic clk;
 	input logic reset, start;
@@ -15,7 +16,7 @@ module mouse_controller (clk, start, reset, PS2_CLK, PS2_DAT, MS_DIR,
 	ps2 #(
 			.WIDTH(640),//640
 			.HEIGHT(480),//480
-			.BIN(100),
+			.BIN(20),
 			.HYSTERESIS(30))
 	U1(
 			.start(start),  

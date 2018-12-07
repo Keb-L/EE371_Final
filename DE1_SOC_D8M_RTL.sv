@@ -130,24 +130,24 @@ module DE1_SOC_D8M_RTL(
 	wire		          		post_VGA_SYNC_N;
 	wire		          		post_VGA_VS;
 	
-	Filter #(.WIDTH(640), .HEIGHT(480))
-		filter (.VGA_CLK(VGA_CLK),
-					.iVGA_B(pre_VGA_B), .iVGA_G(pre_VGA_G), .iVGA_R(pre_VGA_R), .iVGA_Gr( FRM_AVG ),
-					.iVGA_HS(pre_VGA_HS), .iVGA_VS(pre_VGA_VS),
-					.iVGA_SYNC_N(pre_VGA_SYNC_N), .iVGA_BLANK_N(pre_VGA_BLANK_N),
-					.oVGA_B(post_VGA_B), .oVGA_G(post_VGA_G), .oVGA_R(post_VGA_R),
-					.oVGA_HS(post_VGA_HS), .oVGA_VS(post_VGA_VS),
-					.oVGA_SYNC_N(post_VGA_SYNC_N), .oVGA_BLANK_N(post_VGA_BLANK_N),
-					.HEX0(HEX0), .HEX1(HEX1), .HEX2(HEX2), .HEX3(HEX3), .HEX4(HEX4), .HEX5(HEX5),
-					.LEDR(KEDR), .KEY(KEY[1:0]), .SW(SW[8:0]));
+//	Filter #(.WIDTH(640), .HEIGHT(480))
+//		filter (.VGA_CLK(VGA_CLK),
+//					.iVGA_B(pre_VGA_B), .iVGA_G(pre_VGA_G), .iVGA_R(pre_VGA_R), .iVGA_Gr( FRM_AVG ),
+//					.iVGA_HS(pre_VGA_HS), .iVGA_VS(pre_VGA_VS),
+//					.iVGA_SYNC_N(pre_VGA_SYNC_N), .iVGA_BLANK_N(pre_VGA_BLANK_N),
+//					.oVGA_B(post_VGA_B), .oVGA_G(post_VGA_G), .oVGA_R(post_VGA_R),
+//					.oVGA_HS(post_VGA_HS), .oVGA_VS(post_VGA_VS),
+//					.oVGA_SYNC_N(post_VGA_SYNC_N), .oVGA_BLANK_N(post_VGA_BLANK_N),
+//					.HEX0(HEX0), .HEX1(HEX1), .HEX2(HEX2), .HEX3(HEX3), .HEX4(HEX4), .HEX5(HEX5),
+//					.LEDR(KEDR), .KEY(KEY[1:0]), .SW(SW[8:0]));
 					
-	assign VGA_BLANK_N = post_VGA_BLANK_N;
-	assign VGA_B = post_VGA_B;
-	assign VGA_G = post_VGA_G;
-	assign VGA_HS = post_VGA_HS;
-	assign VGA_R = post_VGA_R;
-	assign VGA_SYNC_N = post_VGA_SYNC_N;
-	assign VGA_VS = post_VGA_VS;
+//	assign VGA_BLANK_N = post_VGA_BLANK_N;
+//	assign VGA_B = post_VGA_B;
+//	assign VGA_G = post_VGA_G;
+//	assign VGA_HS = post_VGA_HS;
+//	assign VGA_R = post_VGA_R;
+//	assign VGA_SYNC_N = post_VGA_SYNC_N;
+//	assign VGA_VS = post_VGA_VS;
 
 //=============================================================================
 // REG/WIRE declarations
@@ -340,9 +340,9 @@ FOCUS_ADJ adl(
                       .VIDEO_VS      ( pre_VGA_VS ),
                       .VIDEO_CLK     ( VGA_CLK ),
 		                .VIDEO_DE      (READ_Request) ,
-                      .iR            ( R_AUTO_c ), 
-                      .iG            ( G_AUTO_C ), 
-                      .iB            ( B_AUTO_C ), 
+                      .iR            ( R_AUTO ), 
+                      .iG            ( G_AUTO ), 
+                      .iB            ( B_AUTO ), 
                       .oR            ( pre_VGA_R ) , 
                       .oG            ( pre_VGA_G ) , 
                       .oB            ( pre_VGA_B ) , 
@@ -441,12 +441,31 @@ CLOCKMEM  ck3 ( .CLK(MIPI_PIXEL_CLK_)   ,.CLK_FREQ  (25000000  ) , . CK_1HZ (D8M
 //							END OF AUDIO CODE
 // =====================================================
 					
-parameter H = 640, W = 480;
+parameter H = 480, W = 640;
 wire [7:0] FRM_AVG;
-wire [10:0] x, y;
+wire [10:0] x, y, xC, yC, x_clr, y_clr;
 wire [9:0] VGA_X, VGA_Y; // VGA pointer
 wire [8:0] MS_DIR; // Direction of the mouse 3x3
 wire [7:0] R_AUTO_C, B_AUTO_C, G_AUTO_C;
+wire [7:0] VGA_Cin;
+wire enable;
+
+//pixel_counter #(H, W) pc (.clock(VGA_CLK), .reset(~pre_VGA_VS), .x(xC), .y(yC));
+clearScreen (.clk(CLOCK2_50), .reset(~KEY[2]), .en(clr),
+					.x(x_clr), .y(y_clr));
+					
+always_comb begin
+//	x = KEY[0] ? xC : x_clr;
+//	y = KEY[0] ? yC : y_clr;
+//	VGA_Cin = KEY[0] ? SW[7:0] : 8'h00;
+//	enable = SW[8];
+	
+	x = 		 clr ? x_clr 	: xC;
+	y = 		 clr ? y_clr 	: H - yC;
+	VGA_Cin = clr ? 8'h00 	: SW[7:0];
+//	enable = SW[8];
+end
+
 
 // Determines the average color in a camera frame
 // Updates every half second
@@ -464,10 +483,10 @@ VGA_framebuffer fb(
 	// Inputs
 		.CLOCK_50(CLOCK2_50), 
 		.reset(~KEY[2]), 
-		.x, 
-		.y,
-		.VGA_Cin(FRM_AVG), 
-		.pixel_write(enable),
+		.x(x), 
+		.y(y),
+		.VGA_Cin(VGA_Cin), 
+		.pixel_write(enable | clr),
 	// Outputs
 		.VGA_R( R_AUTO ), 
 		.VGA_G( G_AUTO ), 
@@ -481,8 +500,9 @@ VGA_framebuffer fb(
 		.VGA_Y
 );
 
-// Mouse Controller, interfaces with PS2
-mouse_controller mouse(.clk(CLOCK_50), 
+//// Mouse Controller, interfaces with PS2
+mouse_controller #(H, W) mouse(
+		.clk(CLOCK_50), 
 		.start(~KEY[1]), 
 		.reset(~KEY[2]),
 		
@@ -495,20 +515,58 @@ mouse_controller mouse(.clk(CLOCK_50),
 		.enable(enable), 
 		.clr(clr), 
 		.middle(middle),
-		.x(x), 
-		.y(y)
+		.x(xC), 
+		.y(yC)
 );
 
 showCursor sc (
 	.VGA_Cin_R(R_AUTO), .VGA_Cin_G(G_AUTO), .VGA_Cin_B(B_AUTO),
-	.cursorX(x), .cursorY(y),
+	.cursorX(xC), .cursorY(H - yC),
 	.VGA_X(VGA_X), .VGA_Y(VGA_Y),
-	.VGA_Cout_R(R_AUTO_C), .VGA_Cout_G(G_AUTO_C), .VGA_Cout_B(B_AUTO_C)
+	.VGA_Cout_R(post_VGA_R), .VGA_Cout_G(post_VGA_G), .VGA_Cout_B(post_VGA_B)
 );
+
+
+//showCursor sc (
+//	.VGA_Cin_R(pre_VGA_R), .VGA_Cin_G(pre_VGA_G), .VGA_Cin_B(pre_VGA_B),
+//	.cursorX(x), .cursorY(y),
+//	.VGA_X(VGA_X), .VGA_Y(VGA_Y),
+//	.VGA_Cout_R(post_VGA_R), .VGA_Cout_G(post_VGA_G), .VGA_Cout_B(post_VGA_B)
+//);
+
+always_comb begin
+	post_VGA_VS = pre_VGA_VS;
+	post_VGA_HS = pre_VGA_HS;
+	post_VGA_BLANK_N = pre_VGA_BLANK_N;
+	post_VGA_SYNC_N = pre_VGA_SYNC_N;
+end
+
+assign VGA_BLANK_N = post_VGA_BLANK_N;
+assign VGA_R = post_VGA_R;
+assign VGA_B = post_VGA_B;
+assign VGA_G = post_VGA_G;
+assign VGA_HS = post_VGA_HS;
+assign VGA_SYNC_N = post_VGA_SYNC_N;
+assign VGA_VS = post_VGA_VS;
 
 assign GPIO[8:0] = MS_DIR;
 assign GPIO[35:9] = '0;
 
-//pixel_counter #(H, W) pc (.clock(VGA_CLK), .reset(~VGA_VS), .x, .y);
+SEG7_LUT h0 (.iDIG(FRM_AVG[3:0]), .oSEG(HEX0));
+SEG7_LUT h1 (.iDIG(FRM_AVG[7:4]), .oSEG(HEX1));
+assign HEX2 = '1;
+assign HEX3 = '1;
+assign HEX4 = '1;
+assign HEX5 = '1;
+
+always_comb begin
+	LEDR = '0;
+	LEDR[3:0] = ~KEY;
+//	LEDR[3] = clr;
+//	LEDR[4] = middle;
+//	LEDR[5] = enable;
+end
+
+
 
 endmodule

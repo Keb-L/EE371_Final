@@ -14,7 +14,7 @@ logic [7:0] frame_counter;
 
 assign color = color_reg;
 
-always_ff @(posedge VGA_CLK)
+always_ff @(posedge VGA_CLK or negedge RST_N or negedge V_SYNC) begin
 	if(~RST_N) begin
 		acc <= 0;
 		counter <= 0;
@@ -40,6 +40,7 @@ always_ff @(posedge VGA_CLK)
 		acc <= acc + pixel;
 		counter <= counter + 1;
 	end
+end
 endmodule
 
 module CAM_AVG_testbench();
