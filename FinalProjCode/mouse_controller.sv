@@ -48,7 +48,22 @@ module mouse_controller #(parameter H = 480, W = 640)
 			MS_DIR[4] = 1'b1;
 		end
 		else begin											//motion
-			MS_DIR[1] = 1'b1;
+			if (prev_x > x) begin
+				MS_DIR[3] = 1'b1;
+				MS_DIR[5] = 1'b0;
+			end
+			else begin
+				MS_DIR[5] = 1'b1;
+				MS_DIR[3] = 1'b0;
+			end
+			if (prev_y > y) begin
+				MS_DIR[1] = 1'b1;
+				MS_DIR[7] = 1'b0;
+			end
+			else begin
+				MS_DIR[7] = 1'b1;
+				MS_DIR[1] = 1'b0;
+			end
 		end
 	end
 endmodule

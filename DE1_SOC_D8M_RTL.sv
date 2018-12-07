@@ -406,7 +406,18 @@ CLOCKMEM  ck3 ( .CLK(MIPI_PIXEL_CLK_)   ,.CLK_FREQ  (25000000  ) , . CK_1HZ (D8M
 	wire [23:0] readdata_left, readdata_right;
 	wire [23:0] writedata_left, writedata_right;
 	wire read, write, read_ready, write_ready;
+	
+	assign read = read_ready;
+	assign write = write_ready;
+	clock_generator my_clock_gen(
+		// inputs
+		CLOCK2_50,
+		reset,
 
+		// outputs
+		AUD_XCK
+	);
+	
 	audio_and_video_config cfg(
 		// Inputs
 		CLOCK_50,
@@ -421,7 +432,7 @@ CLOCKMEM  ck3 ( .CLK(MIPI_PIXEL_CLK_)   ,.CLK_FREQ  (25000000  ) , . CK_1HZ (D8M
 		CLOCK_50,
 		reset,
 
-		read,	write,
+		read,	(write & enable),
 		writedata_left, writedata_right,
 
 		AUD_ADCDAT,
@@ -435,7 +446,32 @@ CLOCKMEM  ck3 ( .CLK(MIPI_PIXEL_CLK_)   ,.CLK_FREQ  (25000000  ) , . CK_1HZ (D8M
 		read_ready, write_ready,
 		readdata_left, readdata_right,
 		AUD_DACDAT
-							);
+	);
+	fir_filter_fifo fifo_right(
+		//Inputs
+		CLOCK_50,
+		reset,
+		SW[9],
+		read_ready,
+		write_ready,
+		(readdata_right),
+		
+	//Outputs
+		writedata_right
+	);
+	
+	fir_filter_fifo fifo_left(
+		//Inputs
+		CLOCK_50,
+		reset,
+		SW[9],
+		read_ready,
+		write_ready,
+		(readdata_left),
+		
+		//Outputs
+		writedata_left
+	);
 
 // =====================================================
 //							END OF AUDIO CODE
@@ -565,6 +601,7 @@ always_comb begin
 //	LEDR[3] = clr;
 //	LEDR[4] = middle;
 //	LEDR[5] = enable;
+	LEDR[7:4] = {GPIO[1], GPIO[3], GPIO[5], GPIO[7]};
 end
 
 
