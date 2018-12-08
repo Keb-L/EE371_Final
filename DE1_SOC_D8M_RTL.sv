@@ -167,7 +167,7 @@ wire        D8M_CK_HZ3 ;
 wire [7:0] RED   ; 
 wire [7:0] GREEN  ; 
 wire [7:0] BLUE 		 ; 
-wire [7:0] GRAY;
+//wire [7:0] GRAY;
 wire [12:0] VGA_H_CNT;			
 wire [12:0] VGA_V_CNT;	
 
@@ -315,7 +315,7 @@ RAW2RGB_J				u4	(
 							.oRed         ( RED  ),
 							.oGreen       ( GREEN),
 							.oBlue        ( BLUE ),
-							.oGray		  ( GRAY )
+							.oGray		  ()
 
 							);		 
 //------AOTO FOCUS ENABLE  --
@@ -479,6 +479,7 @@ CLOCKMEM  ck3 ( .CLK(MIPI_PIXEL_CLK_)   ,.CLK_FREQ  (25000000  ) , . CK_1HZ (D8M
 					
 parameter H = 480, W = 640;
 wire [7:0] FRM_AVG;
+wire [8:0] FRM_AVG_CLMP;
 wire [10:0] x, y, xC, yC, x_clr, y_clr;
 wire [9:0] VGA_X, VGA_Y; // VGA pointer
 wire [8:0] MS_DIR; // Direction of the mouse 3x3
@@ -487,22 +488,21 @@ wire [7:0] VGA_Cin;
 wire enable;
 wire cam_upd;
 
+logic [9:0] GRAY;
+assign GRAY = (RED+BLUE+GREEN)/3;
+
 //pixel_counter #(H, W) pc (.clock(VGA_CLK), .reset(~pre_VGA_VS), .x(xC), .y(yC));
 clearScreen (.clk(CLOCK2_50), .reset(~KEY[2]), .en(clr),
 					.x(x_clr), .y(y_clr));
 					
 always_comb begin
-//	x = KEY[0] ? xC : x_clr;
-//	y = KEY[0] ? yC : y_clr;
-//	VGA_Cin = KEY[0] ? SW[7:0] : 8'h00;
-//	enable = SW[8];
-	
 	x = 		 clr ? x_clr 	: xC;
 	y = 		 clr ? y_clr 	: H - yC;
-	VGA_Cin = clr ? 8'h00 	: SW[7:0];
+	
+	FRM_AVG_CLMP = ( FRM_AVG + (FRM_AVG >> 1) ) > 9'd255 ? 9'd255 : ( FRM_AVG + (FRM_AVG >> 1) );
+	VGA_Cin = 	 clr ? 8'h00 	: FRM_AVG_CLMP[7:0];
 //	enable = SW[8];
 end
-
 
 // Determines the average color in a camera frame
 // Updates every half second
@@ -510,7 +510,7 @@ CAM_AVG pavg (
 	.VGA_CLK(VGA_CLK),
 	.V_SYNC(pre_VGA_VS),
 	.RST_N(KEY[2]), 
-	.pixel(GRAY),
+	.pixel(GRAY[7:0]),
 	.color(FRM_AVG),
 	.upd(cam_upd)
 );
@@ -533,6 +533,7 @@ VGA_framebuffer fb(
 		.VGA_VS(pre_VGA_VS),
 		.VGA_BLANK_N(pre_VGA_BLANK_N), 
 		.VGA_SYNC_N(pre_VGA_SYNC_N),
+		.READ_Request,
 	// VGA pointer
 		.VGA_X, 
 		.VGA_Y
@@ -564,14 +565,6 @@ showCursor sc (
 	.VGA_Cout_R(post_VGA_R), .VGA_Cout_G(post_VGA_G), .VGA_Cout_B(post_VGA_B)
 );
 
-
-//showCursor sc (
-//	.VGA_Cin_R(pre_VGA_R), .VGA_Cin_G(pre_VGA_G), .VGA_Cin_B(pre_VGA_B),
-//	.cursorX(x), .cursorY(y),
-//	.VGA_X(VGA_X), .VGA_Y(VGA_Y),
-//	.VGA_Cout_R(post_VGA_R), .VGA_Cout_G(post_VGA_G), .VGA_Cout_B(post_VGA_B)
-//);
-
 always_comb begin
 	post_VGA_VS = pre_VGA_VS;
 	post_VGA_HS = pre_VGA_HS;
@@ -592,6 +585,9 @@ assign GPIO[35:9] = '0;
 
 SEG7_LUT h0 (.iDIG(FRM_AVG[3:0]), .oSEG(HEX0));
 SEG7_LUT h1 (.iDIG(FRM_AVG[7:4]), .oSEG(HEX1));
+
+//SEG7_LUT h2 (.iDIG(GRAY[3:0]), .oSEG(HEX2));
+//SEG7_LUT h3 (.iDIG(GRAY[7:4]), .oSEG(HEX3));
 assign HEX2 = '1;
 assign HEX3 = '1;
 assign HEX4 = '1;
@@ -600,7 +596,7 @@ assign HEX5 = '1;
 always_comb begin
 	LEDR = '0;
 	LEDR[3:0] = ~KEY;
-	LEDR[5] = cam_upd;
+	LEDR[9] = cam_upd;
 //	LEDR[3] = clr;
 //	LEDR[4] = middle;
 //	LEDR[5] = enable;

@@ -16,54 +16,39 @@ reg r_upd;
 assign upd = r_upd;
 assign color = r_color;
 
-always_ff @(negedge V_SYNC) begin
-	if(r_frame + 1  == 8'd1) begin
-		r_frame <= 0;
-		r_color <= r_acc / (r_counter - 1);  
-	end
-	else begin
-		r_frame <= r_frame + 1;
-	end
-	r_upd <= ~r_upd;
-end
+wire [31:0] avg;
+assign avg = r_acc / r_counter;
 
 always_ff @(posedge VGA_CLK) begin
 	if(~RST_N) begin
 		r_acc <= 0;
-		r_counter <= 1;
-//		r_frame <= 0;
-//		r_color <= 0;
-//		r_upd <= 0;
-		r_time <= 0;
+		r_counter <= 0;
+		r_frame <= 0;
+		r_color <= 0;
+		r_upd <= 0;
 	end
-	else if(~V_SYNC) begin
-		r_acc <= 0;
-		r_counter <= 1;	
-		
-//		if(r_time > (32'h017D_7840 >> 2) ) begin
-//			r_time <= 0;
-//			r_color <= r_acc / (r_counter - 1);
-//			r_upd <= ~r_upd;
-//		end
-//		else begin
-//			r_time <= r_time + 1;
-//		end
-//		// once every 30 frames
-//		if (r_frame + 1 == 8'd60) begin
-//			r_color <= r_acc / (r_counter - 1);
-//			r_frame <= 0;
-//			r_upd <= ~r_upd;
-//		end
-//		else begin
-//			r_frame <= r_frame + 1;
-//		end
-	end
+
 	else begin
-		r_acc <= r_acc + pixel;
-		r_counter <= r_counter + 1;
-//		r_color <= r_color;
-//		r_frame <= r_frame;
-		r_time <= r_time + 1;
+		if(r_counter + 1 == 32'd307200) begin
+			r_acc <= 0;
+			r_counter <= 0;
+			
+//			r_color <= avg;
+//			r_upd <= ~r_upd;
+			
+			if(r_frame + 1 == 8'd30) begin
+				r_color <= avg;
+				r_upd <= ~r_upd;
+				r_frame <= 0;
+			end
+			else begin
+				r_frame <= r_frame + 1;
+			end
+		end 
+		else begin
+			r_acc <= r_acc + pixel;
+			r_counter <= r_counter + 1;
+		end
 	end
 end
 endmodule
@@ -109,3 +94,26 @@ initial begin
 end
 
 endmodule
+
+//	else if(~V_SYNC) begin
+//		r_acc <= 0;
+//		r_counter <= 1;	
+//		
+//		if(r_time > (32'h017D_7840 >> 2) ) begin
+//			r_time <= 0;
+//			r_color <= r_acc / (r_counter - 1);
+//			r_upd <= ~r_upd;
+//		end
+//		else begin
+//			r_time <= r_time + 1;
+//		end
+//		// once every 30 frames
+//		if (r_frame + 1 == 8'd60) begin
+//			r_color <= r_acc / (r_counter - 1);
+//			r_frame <= 0;
+//			r_upd <= ~r_upd;
+//		end
+//		else begin
+//			r_frame <= r_frame + 1;
+//		end
+//	end

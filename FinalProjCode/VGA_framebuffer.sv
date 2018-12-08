@@ -12,7 +12,8 @@ module VGA_framebuffer(
 		       
  output logic [7:0] VGA_R, VGA_G, VGA_B,
  output logic [9:0] VGA_X, VGA_Y,
- output logic 	     VGA_CLK, VGA_HS, VGA_VS, VGA_BLANK_N, VGA_SYNC_N
+ output logic 	     VGA_CLK, VGA_HS, VGA_VS, VGA_BLANK_N, VGA_SYNC_N,
+ output READ_Request
  );
 /*
  * 640 X 480 VGA timing for a 50 MHz clock: one pixel every other cycle
@@ -71,7 +72,7 @@ module VGA_framebuffer(
 
    assign VGA_SYNC_N = 1; // For adding sync to video signals; not used for VGA
    
-   // Horizontal active: 0 to 1279     Vertical active: 0 to 479
+   // Horizontal active:     Vertical active: 0 to 479
    // 101 0000 0000  1280	       01 1110 0000  480	       
    // 110 0011 1111  1599	       10 0000 1100  524
    logic 			     blank;
@@ -104,6 +105,13 @@ module VGA_framebuffer(
    
 	assign VGA_X = hcount >> 1;
 	assign VGA_Y = vcount;
+	
+//	assign oRequest    = (  H_Cont >=  X_START+H_MARK  &&  H_Cont< X_START+H_SYNC_ACT +H_MARK 
+//							  &&
+//							   V_Cont >=  Y_START+V_MARK && V_Cont< Y_START + V_SYNC_ACT + V_MARK)?1:0 ; 
+//								  
+      
+	assign READ_Request = (VGA_X <= 640 & VGA_Y <= 480) ? 1 : 0;
 endmodule
 
 module VGA_framebuffer_testbench();
@@ -115,6 +123,7 @@ logic [18:0] VGA_X, VGA_Y;
 		       
 logic [7:0]  VGA_R, VGA_G, VGA_B;
 logic 	    VGA_CLK, VGA_HS, VGA_VS, VGA_BLANK_N, VGA_SYNC_N;
+logic READ_Request;
 
 VGA_framebuffer dut (.*);
 

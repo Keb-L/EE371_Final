@@ -110,4 +110,3 @@ assign	oVGA_B	 =	 oVGA_BLANK ?	iGray	   :	0;
 								  								  
 endmodule
 
-
