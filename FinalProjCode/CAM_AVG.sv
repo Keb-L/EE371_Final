@@ -1,6 +1,8 @@
-module CAM_AVG (
-	input VGA_CLK,
-	input V_SYNC, 
+module CAM_AVG 
+#(parameter frame_max = 30,
+			pixel_max = 307200)
+(
+	input VGA_CLK, 
 	input RST_N,
 	input [7:0] pixel,
 	output [7:0] color,
@@ -10,14 +12,13 @@ module CAM_AVG (
 reg [31:0] r_acc, r_counter;
 reg [7:0] r_color;
 reg [7:0] r_frame; 
-reg [31:0] r_time;
 reg r_upd;
 
 assign upd = r_upd;
 assign color = r_color;
 
 wire [31:0] avg;
-assign avg = r_acc / r_counter;
+assign avg = (r_acc + pixel) / (r_counter + 1);
 
 always_ff @(posedge VGA_CLK) begin
 	if(~RST_N) begin
@@ -29,14 +30,11 @@ always_ff @(posedge VGA_CLK) begin
 	end
 
 	else begin
-		if(r_counter + 1 == 32'd307200) begin
+		if(r_counter + 1 == pixel_max) begin
 			r_acc <= 0;
 			r_counter <= 0;
 			
-//			r_color <= avg;
-//			r_upd <= ~r_upd;
-			
-			if(r_frame + 1 == 8'd30) begin
+			if(r_frame + 1 == frame_max) begin
 				r_color <= avg;
 				r_upd <= ~r_upd;
 				r_frame <= 0;
@@ -55,12 +53,12 @@ endmodule
 
 module CAM_AVG_testbench();
 logic VGA_CLK;
-logic RST_N, V_SYNC;
+logic RST_N;
 logic [7:0] pixel;
 logic [7:0] color;
 logic upd;
 
-CAM_AVG dut (.*);
+CAM_AVG #(2, 10) dut (.*);
 
 parameter CLOCK_PERIOD = 20000;
 initial begin
@@ -72,24 +70,12 @@ int i;
 initial begin
 	RST_N = 0; @(posedge VGA_CLK);
 	RST_N = 1; @(posedge VGA_CLK);
-	V_SYNC = 1; pixel = 0; 		@(posedge VGA_CLK);
-	V_SYNC = 0; pixel = 200; 	@(posedge VGA_CLK);
-	V_SYNC = 1;  					@(posedge VGA_CLK);
-	#(CLOCK_PERIOD*100);		@(posedge VGA_CLK);
-	V_SYNC = 0;					 	@(posedge VGA_CLK);
-	V_SYNC = 1; 
-	for(i = 0; i < 100; i++) begin
+
+	for(i = 0; i < 1000; i++) begin
 		pixel = i + 200; @(posedge VGA_CLK);
 	end	
-	
-	V_SYNC = 0;					 	@(posedge VGA_CLK);
-	V_SYNC = 1; 
-	for(i = 0; i < 100; i++) begin
-		pixel = i; @(posedge VGA_CLK);
-	end	
-	
-	V_SYNC = 0;					 	@(posedge VGA_CLK);
-	V_SYNC = 1;						@(posedge VGA_CLK);
+ 
+	#(CLOCK_PERIOD * 10);
 	$stop;
 end
 
