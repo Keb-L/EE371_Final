@@ -119,11 +119,13 @@ logic 	    CLOCK_50, reset;
 logic [10:0] x, y; // Pixel coordinates
 logic [7:0]  VGA_Cin;
 logic			 pixel_write;
-logic [18:0] VGA_X, VGA_Y;
+logic [9:0] VGA_X, VGA_Y;
 		       
 logic [7:0]  VGA_R, VGA_G, VGA_B;
 logic 	    VGA_CLK, VGA_HS, VGA_VS, VGA_BLANK_N, VGA_SYNC_N;
 logic READ_Request;
+
+parameter H = 480, W = 640;
 
 VGA_framebuffer dut (.*);
 
@@ -133,10 +135,16 @@ initial begin
 	forever #(CLOCK_PERIOD/2) CLOCK_50 <= ~CLOCK_50;
 end
 
+int i, j;
 initial begin
-pixel_write = 0; x = 4; y = 0; reset = 1;
-VGA_Cin = 8'd127; @(posedge CLOCK_50);
-pixel_write = 1; reset = 0; @(posedge CLOCK_50);
+pixel_write = 0; x = 0; y = 0; reset = 1; 	@(posedge CLOCK_50);
+reset = 0; pixel_write = 1;
+for(j = 0; j < H; j++) begin
+	for(i = 0; i < W; i++) begin
+		x = i; y = j; VGA_Cin = i + j; @(posedge CLOCK_50); @(posedge CLOCK_50);
+	end
+end
+	
 #1000000;
 $stop;
 end

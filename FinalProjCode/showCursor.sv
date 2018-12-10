@@ -29,11 +29,16 @@ logic [23:0] color;
 always_comb begin
 	color = {VGA_Cin_R, VGA_Cin_G, VGA_Cin_B};
 	
-	if(VGA_X == 1 | VGA_X == W-3)
+	if(VGA_X == 0 | VGA_X == W-1)
 		color = WHITE;
-	if(VGA_Y == 1 | VGA_Y == H-1)
+	if(VGA_Y == 0 | VGA_Y == H-1)
 		color = WHITE;
 	
+//	if(VGA_X == 1 | VGA_X == W-3)
+//		color = WHITE;
+//	if(VGA_Y == 1 | VGA_Y == H-1)
+//		color = WHITE;
+//	
 	if(VGA_X == cursorX & VGA_Y == cursorY)
 		color = RED;
 	if(VGA_X == cursorX & ( (VGA_Y - cursorY) < 4 | (cursorY - VGA_Y) < 4))
@@ -46,4 +51,24 @@ assign {VGA_Cout_R, VGA_Cout_G, VGA_Cout_B} = color;
 //assign VGA_Cout_G = color[15:8];
 //assign VGA_Cout_B = color[7:0];
 
+endmodule
+
+module showCursor_testbench();
+logic [7:0]	VGA_Cin_R, VGA_Cin_G, VGA_Cin_B;
+logic [10:0] cursorX, cursorY;
+logic [9:0] VGA_X, VGA_Y;
+logic [7:0] VGA_Cout_R, VGA_Cout_G, VGA_Cout_B;
+
+showCursor #(10, 10) dut (.*);
+
+int i, j;
+initial begin
+VGA_Cin_R = 127; VGA_Cin_G = 127; VGA_Cin_B = 127;
+for(i = 0; i < 10; i++) begin
+	for(j = 0; j < 10; j++) begin
+		cursorX = 5; cursorY = 5; VGA_X = i; VGA_Y = j; #1;
+	end
+end
+$stop;
+end
 endmodule
