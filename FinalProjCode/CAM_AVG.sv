@@ -1,3 +1,17 @@
+/*
+EE 371 Final Project - FPGA Drawing Application
+Author(s): Kelvin Lin, Nate Park
+
+CAM_AVG.sv
+This module computes the average 8-bit value of a frame. A frame in this 
+context is defined as a total number of pixels (default 640x480 = 307200). 
+Recomputes the average every frame_max number of frames (default 30). 
+
+The recomputed frame average is for the most recent frame only as the 
+accumulator and counter are reset for each frame.
+
+*/
+
 module CAM_AVG 
 #(parameter frame_max = 30,
 			pixel_max = 307200)
@@ -18,9 +32,13 @@ assign upd = r_upd;
 assign color = r_color;
 
 wire [31:0] avg;
+
+// Compute average frame color, including current cycle. 
+// Add 1 to counter to compensate for 0-indexing
 assign avg = (r_acc + pixel) / (r_counter + 1);
 
 always_ff @(posedge VGA_CLK) begin
+	// Reset system to known state
 	if(~RST_N) begin
 		r_acc <= 0;
 		r_counter <= 0;
@@ -30,20 +48,28 @@ always_ff @(posedge VGA_CLK) begin
 	end
 
 	else begin
+		// Reached pixel_max
 		if(r_counter + 1 == pixel_max) begin
+			// Reset accumulator, counter
 			r_acc <= 0;
 			r_counter <= 0;
 			
+			// Reached frame_max
 			if(r_frame + 1 == frame_max) begin
+				// Assign new average framer color
+				// toggle update flag, reset frame counter
 				r_color <= avg;
 				r_upd <= ~r_upd;
 				r_frame <= 0;
 			end
 			else begin
+			// Not yet reached frame_max -> increment frame counter
 				r_frame <= r_frame + 1;
 			end
 		end 
 		else begin
+		// Not yet reached pixel_max
+		// update counter and accumulator.
 			r_acc <= r_acc + pixel;
 			r_counter <= r_counter + 1;
 		end

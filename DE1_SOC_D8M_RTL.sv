@@ -489,6 +489,7 @@ wire enable;
 wire cam_upd;
 
 logic [9:0] GRAY;
+// Compute average RGB color -> GRAY
 assign GRAY = (RED+BLUE+GREEN)/3;
 
 //pixel_counter #(H, W) pc (.clock(VGA_CLK), .reset(~pre_VGA_VS), .x(xC), .y(yC));
@@ -499,6 +500,7 @@ always_comb begin
 	x = 		 clr ? x_clr 	: xC;
 	y = 		 clr ? y_clr 	: H - yC;
 	
+	// 50% boost for Frame average, clamped to [0, 255]
 	FRM_AVG_CLMP = ( FRM_AVG + (FRM_AVG >> 1) ) > 9'd255 ? 9'd255 : ( FRM_AVG + (FRM_AVG >> 1) );
 	VGA_Cin = 	 clr ? 8'h00 	: FRM_AVG_CLMP[7:0];
 //	enable = SW[8];
@@ -508,7 +510,6 @@ end
 // Updates every half second
 CAM_AVG pavg (
 	.VGA_CLK(VGA_CLK),
-	.V_SYNC(pre_VGA_VS),
 	.RST_N(KEY[2]), 
 	.pixel(GRAY[7:0]),
 	.color(FRM_AVG),
@@ -558,6 +559,9 @@ mouse_controller #(H, W) mouse(
 		.y(yC)
 );
 
+// Multiplexer between VGA_framebuffer and output
+// Reassigns color based on VGA pointer and cursor position
+// Draws white border, red cursor
 showCursor sc (
 	.VGA_Cin_R(R_AUTO), .VGA_Cin_G(G_AUTO), .VGA_Cin_B(B_AUTO),
 	.cursorX(xC), .cursorY(H - yC),
@@ -583,6 +587,7 @@ assign VGA_VS = post_VGA_VS;
 assign GPIO[8:0] = MS_DIR;
 assign GPIO[35:9] = '0;
 
+// Display 8-bit Frame Average on 7-Seg Displays
 SEG7_LUT h0 (.iDIG(FRM_AVG[3:0]), .oSEG(HEX0));
 SEG7_LUT h1 (.iDIG(FRM_AVG[7:4]), .oSEG(HEX1));
 
@@ -596,7 +601,7 @@ assign HEX5 = '1;
 always_comb begin
 	LEDR = '0;
 	LEDR[3:0] = ~KEY;
-	LEDR[9] = cam_upd;
+	LEDR[9] = cam_upd;	// Shows rate of average color recomputation
 //	LEDR[3] = clr;
 //	LEDR[4] = middle;
 //	LEDR[5] = enable;

@@ -1,7 +1,16 @@
 /*
- * Black-and-white VGA Framebuffer
- *
- * Stephen A. Edwards, Columbia University
+EE 371 Final Project - FPGA Drawing Application
+Author(s): Kelvin Lin, Nate Park
+
+Grayscale VGA Framebuffer (640x480)
+
+Original Code: Stephen A. Edwards, Columbia University
+Modified by Kelvin Lin, Nate Park
+
+VGA_framebuffer.sv
+Implements a VGA controller with a (640x480) buffer with 8-bit grayscale color.
+Added outputs for VGA_X, VGA_Y (current position of the VGA pointers hcount, vcount)
+Added READ_Request to request camera data from SDRAM.
  */
 
 module VGA_framebuffer(
